@@ -1,0 +1,18 @@
+<resources>
+
+    <!-- login -->
+    <string name="app_name">Agenda de Atividades</string>
+    <string name="app_logo_desc">Logo do aplicativo Agenda de Atividades</string>
+    <string name="email_hint">Digite seu e-mail</string>
+    <string name="password_hint">Digite sua senha</string>
+    <string name="login_button">Entrar</string>
+    <string name="register_prompt">Não tem uma conta? Registre-se</string>
+
+    <!-- Cadastro -->
+    <string name="register_title">Criar Nova Conta</string>
+    <string name="name_hint">Digite seu nome</string>
+    <string name="confirm_password_hint">Confirme sua senha</string>
+    <string name="register_button">Registrar</string>
+    <string name="already_have_account">Já tem uma conta? Faça login</string>
+
+</resources>
