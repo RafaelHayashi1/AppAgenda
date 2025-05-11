@@ -1,6 +1,7 @@
 package com.example.agendaatividadesv2;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -15,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.agendaatividadesv2.adapters.AtividadeAdapter;
 import com.example.agendaatividadesv2.dao.AtividadeDAO;
+import com.example.agendaatividadesv2.dao.CategoriaDAO;
+import com.example.agendaatividadesv2.dao.LocalDAO;
 import com.example.agendaatividadesv2.modelos.Atividade;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -30,12 +33,12 @@ import java.util.Locale;
 
 public class FiltroAtividadesActivity extends AppCompatActivity {
     private TextInputEditText etFiltroTitulo, etDataInicial, etDataFinal;
-    private AutoCompleteTextView etFiltroParticipantes, etFiltroCategoria;
+    private AutoCompleteTextView etFiltroParticipantes, etFiltroCategoria, etFiltroLocal;
     private MaterialButton btnFiltrar, btnLimpar;
     private AtividadeDAO atividadeDAO;
     private Calendar calendar;
     private SimpleDateFormat dateFormat;
-    private ArrayAdapter<String> adapterParticipantes, adapterCategorias;
+    private ArrayAdapter<String> adapterParticipantes, adapterCategorias, adapterLocais;
     private RecyclerView rvResultados;
     private TextView tvResultados;
     private AtividadeAdapter adapter;
@@ -74,13 +77,14 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
             etDataFinal = findViewById(R.id.etDataFinal);
             etFiltroParticipantes = findViewById(R.id.etFiltroParticipantes);
             etFiltroCategoria = findViewById(R.id.etFiltroCategoria);
+            etFiltroLocal = findViewById(R.id.etFiltroLocal);
             btnFiltrar = findViewById(R.id.btnFiltrar);
             btnLimpar = findViewById(R.id.btnLimpar);
             rvResultados = findViewById(R.id.rvResultados);
             tvResultados = findViewById(R.id.tvResultados);
 
             if (etFiltroTitulo == null || etDataInicial == null || etDataFinal == null || 
-                etFiltroParticipantes == null || etFiltroCategoria == null || 
+                etFiltroParticipantes == null || etFiltroCategoria == null || etFiltroLocal == null ||
                 btnFiltrar == null || btnLimpar == null || rvResultados == null || tvResultados == null) {
                 throw new IllegalStateException("Componentes não encontrados");
             }
@@ -95,10 +99,11 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
             configurarDatePicker(etDataInicial);
             configurarDatePicker(etDataFinal);
 
-            // Carregar lista de participantes e categorias
-            android.util.Log.d("FiltroAtividades", "Carregando participantes e categorias");
+            // Carregar lista de participantes, categorias e locais
+            android.util.Log.d("FiltroAtividades", "Carregando dados dos spinners");
             carregarParticipantes();
             carregarCategorias();
+            carregarLocais();
 
             // Configurar botões
             android.util.Log.d("FiltroAtividades", "Configurando botões");
@@ -168,9 +173,8 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
     private void carregarCategorias() {
         try {
             android.util.Log.d("FiltroAtividades", "Iniciando carregamento de categorias");
-            List<String> categorias = Arrays.asList(
-                "Reunião", "Evento", "Compromisso", "Tarefa", "Lembrete", "Outro"
-            );
+            CategoriaDAO categoriaDAO = new CategoriaDAO(this);
+            List<String> categorias = categoriaDAO.listarNomesCategorias();
             
             android.util.Log.d("FiltroAtividades", "Criando adapter com " + categorias.size() + " categorias");
             adapterCategorias = new ArrayAdapter<>(
@@ -186,6 +190,26 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
         }
     }
 
+    private void carregarLocais() {
+        try {
+            android.util.Log.d("FiltroAtividades", "Iniciando carregamento de locais");
+            LocalDAO localDAO = new LocalDAO(this);
+            List<String> locais = localDAO.listarNomesLocais();
+            
+            android.util.Log.d("FiltroAtividades", "Criando adapter com " + locais.size() + " locais");
+            adapterLocais = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                locais
+            );
+            etFiltroLocal.setAdapter(adapterLocais);
+            android.util.Log.d("FiltroAtividades", "Locais carregados com sucesso");
+        } catch (Exception e) {
+            android.util.Log.e("FiltroAtividades", "Erro ao carregar locais: " + e.getMessage(), e);
+            Toast.makeText(this, "Erro ao carregar locais", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void aplicarFiltro() {
         try {
             String titulo = etFiltroTitulo != null ? etFiltroTitulo.getText().toString().trim() : "";
@@ -193,6 +217,7 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
             String dataFinal = etDataFinal != null ? etDataFinal.getText().toString().trim() : "";
             String participante = etFiltroParticipantes != null ? etFiltroParticipantes.getText().toString().trim() : "";
             String categoria = etFiltroCategoria != null ? etFiltroCategoria.getText().toString().trim() : "";
+            String local = etFiltroLocal != null ? etFiltroLocal.getText().toString().trim() : "";
 
             // Validar datas
             if (!dataInicial.isEmpty() && !dataFinal.isEmpty()) {
@@ -211,7 +236,7 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
 
             // Aplicar filtro e mostrar resultados
             List<Atividade> atividadesFiltradas = atividadeDAO.listarAtividadesFiltradas(
-                titulo, dataInicial, dataFinal, participante, categoria
+                titulo, dataInicial, dataFinal, participante, categoria, local
             );
 
             if (atividadesFiltradas.isEmpty()) {
@@ -223,6 +248,18 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
                 rvResultados.setVisibility(View.VISIBLE);
                 adapter.setAtividades(atividadesFiltradas);
                 adapter.notifyDataSetChanged();
+
+                // Retornar resultado com os filtros aplicados
+                Intent resultIntent = new Intent();
+                Bundle extras = new Bundle();
+                extras.putString("titulo", titulo);
+                extras.putString("data_inicial", dataInicial);
+                extras.putString("data_final", dataFinal);
+                extras.putString("participante", participante);
+                extras.putString("categoria", categoria);
+                extras.putString("local", local);
+                resultIntent.putExtras(extras);
+                setResult(RESULT_OK, resultIntent);
             }
         } catch (Exception e) {
             android.util.Log.e("FiltroAtividades", "Erro ao aplicar filtro: " + e.getMessage(), e);
@@ -237,6 +274,7 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
             if (etDataFinal != null) etDataFinal.setText("");
             if (etFiltroParticipantes != null) etFiltroParticipantes.setText("");
             if (etFiltroCategoria != null) etFiltroCategoria.setText("");
+            if (etFiltroLocal != null) etFiltroLocal.setText("");
             
             // Limpar resultados
             tvResultados.setVisibility(View.GONE);
@@ -253,5 +291,6 @@ public class FiltroAtividadesActivity extends AppCompatActivity {
     public void onBackPressed() {
         setResult(RESULT_CANCELED);
         super.onBackPressed();
+
     }
 } 

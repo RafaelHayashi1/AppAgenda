@@ -77,14 +77,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:hint="Local"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <AutoCompleteTextView
                     android:id="@+id/etLocal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:maxLines="1"/>
+                    android:inputType="none"
+                    android:completionThreshold="1"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -124,13 +124,14 @@
                 android:hint="Participantes (separados por vírgula)"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <AutoCompleteTextView
                     android:id="@+id/etParticipantes"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textMultiLine"
                     android:minLines="2"
-                    android:gravity="top"/>
+                    android:gravity="top"
+                    android:completionThreshold="1"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout

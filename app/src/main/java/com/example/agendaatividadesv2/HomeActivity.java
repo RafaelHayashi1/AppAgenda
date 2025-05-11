@@ -2,6 +2,7 @@ package com.example.agendaatividadesv2;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 
 import androidx.annotation.Nullable;
@@ -18,68 +19,81 @@ import com.google.android.material.button.MaterialButton;
 import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
-    private Button btnAddAtividade, btnSair;
-    private RecyclerView rvAtividades;
+    private static final String TAG = "HomeActivity";
+    private Button btnAdicionar, btnSair;
+    private RecyclerView listaAtividades;
     private AtividadeDAO atividadeDAO;
-    private SessionManager sessionManager;
-    private AtividadeAdapter adapter;
-    private static final int REQUEST_FILTRO = 2;
-    private MaterialButton btnFiltroAvancado;
+    private SessionManager gerenciadorSessao;
+    private AtividadeAdapter adaptador;
+    private static final int CODIGO_FILTRO = 2;
+    private MaterialButton btnFiltro;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+        Log.d(TAG, "Iniciando HomeActivity");
 
-        btnAddAtividade = findViewById(R.id.btnAddAtividade);
+        // Inicializar componentes
+        btnAdicionar = findViewById(R.id.btnAddAtividade);
         btnSair = findViewById(R.id.btnSair);
-        rvAtividades = findViewById(R.id.rvAtividades);
-        btnFiltroAvancado = findViewById(R.id.btnFiltroAvancado);
+        listaAtividades = findViewById(R.id.rvAtividades);
+        btnFiltro = findViewById(R.id.btnFiltroAvancado);
 
-        // Inicialização do DAO e SessionManager
+        // Inicializar DAO e gerenciador de sessão
         atividadeDAO = new AtividadeDAO(this);
-        sessionManager = new SessionManager(this);
+        gerenciadorSessao = new SessionManager(this);
 
-        // Configurar RecyclerView
-        rvAtividades.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new AtividadeAdapter(this, atividadeDAO.listarAtividades());
-        rvAtividades.setAdapter(adapter);
+        // Configurar lista de atividades
+        listaAtividades.setLayoutManager(new LinearLayoutManager(this));
+        adaptador = new AtividadeAdapter(this, atividadeDAO.listarAtividades());
+        listaAtividades.setAdapter(adaptador);
+        Log.d(TAG, "Lista de atividades configurada");
 
-        // Configuração dos botões
-        btnAddAtividade.setOnClickListener(v -> {
-            Intent intent = new Intent(HomeActivity.this, AddAtividadeActivity.class);
-            startActivity(intent);
+        // Configurar botões
+        btnAdicionar.setOnClickListener(v -> {
+            Log.d(TAG, "Abrindo tela de adicionar atividade");
+            Intent telaAdicionar = new Intent(HomeActivity.this, AddAtividadeActivity.class);
+            startActivity(telaAdicionar);
         });
 
         btnSair.setOnClickListener(v -> {
-            sessionManager.logout();
+            Log.d(TAG, "Realizando logout");
+            gerenciadorSessao.logout();
+            Intent telaLogin = new Intent(HomeActivity.this, MainActivity.class);
+            telaLogin.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(telaLogin);
             finish();
         });
 
-        btnFiltroAvancado.setOnClickListener(v -> abrirFiltroAvancado());
+        btnFiltro.setOnClickListener(v -> abrirFiltro());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        carregarAtividades();
+        Log.d(TAG, "Atualizando lista de atividades");
+        atualizarLista();
     }
 
-    private void carregarAtividades() {
+    private void atualizarLista() {
         List<Atividade> atividades = atividadeDAO.listarAtividades();
-        adapter.setAtividades(atividades);
+        adaptador.setAtividades(atividades);
+        Log.d(TAG, "Lista atualizada com " + atividades.size() + " atividades");
     }
 
-    private void abrirFiltroAvancado() {
-        Intent intent = new Intent(this, FiltroAtividadesActivity.class);
-        startActivityForResult(intent, REQUEST_FILTRO);
+    private void abrirFiltro() {
+        Log.d(TAG, "Abrindo tela de filtro");
+        Intent telaFiltro = new Intent(this, FiltroAtividadesActivity.class);
+        startActivityForResult(telaFiltro, CODIGO_FILTRO);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_FILTRO && resultCode == RESULT_OK && data != null) {
-            aplicarFiltros(data.getExtras());
+    protected void onActivityResult(int codigoRequisicao, int codigoResultado, @Nullable Intent dados) {
+        super.onActivityResult(codigoRequisicao, codigoResultado, dados);
+        if (codigoRequisicao == CODIGO_FILTRO && codigoResultado == RESULT_OK && dados != null) {
+            Log.d(TAG, "Aplicando filtros");
+            aplicarFiltros(dados.getExtras());
         }
     }
 
@@ -89,16 +103,22 @@ public class HomeActivity extends AppCompatActivity {
         String dataFinal = filtros.getString("data_final", "");
         String participante = filtros.getString("participante", "");
         String categoria = filtros.getString("categoria", "");
+        String local = filtros.getString("local", "");
+
+        Log.d(TAG, "Filtros aplicados: " +
+            "\nTítulo: " + titulo +
+            "\nData Inicial: " + dataInicial +
+            "\nData Final: " + dataFinal +
+            "\nParticipante: " + participante +
+            "\nCategoria: " + categoria +
+            "\nLocal: " + local);
 
         List<Atividade> atividadesFiltradas = atividadeDAO.listarAtividadesFiltradas(
-            titulo,
-            dataInicial,
-            dataFinal,
-            participante,
-            categoria
+            titulo, dataInicial, dataFinal, participante, categoria, local
         );
 
-        adapter.setAtividades(atividadesFiltradas);
-        adapter.notifyDataSetChanged();
+        adaptador.setAtividades(atividadesFiltradas);
+        adaptador.notifyDataSetChanged();
+        Log.d(TAG, "Filtros aplicados com sucesso. " + atividadesFiltradas.size() + " atividades encontradas");
     }
 }

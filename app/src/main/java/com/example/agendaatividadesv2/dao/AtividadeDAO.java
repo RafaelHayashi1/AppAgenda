@@ -63,7 +63,9 @@ public class AtividadeDAO {
         List<Atividade> atividades = new ArrayList<>();
         db = dbHelper.getReadableDatabase();
         String[] columns = {"id", "titulo_Ativ", "datalnicial_Ativ", "hora", "local_Ativ", "desc_Ativ", "categoria", "participantes"};
-        Cursor cursor = db.query("Atividades", columns, null, null, null, null, "datalnicial_Ativ ASC, hora ASC");
+        String selection = "id_usuario = ?";
+        String[] selectionArgs = {String.valueOf(sessionManager.getUserId())};
+        Cursor cursor = db.query("Atividades", columns, selection, selectionArgs, null, null, "datalnicial_Ativ ASC, hora ASC");
 
         while (cursor.moveToNext()) {
             Atividade atividade = new Atividade();
@@ -85,8 +87,8 @@ public class AtividadeDAO {
     public Atividade buscarAtividade(long id) {
         db = dbHelper.getReadableDatabase();
         String[] columns = {"id", "titulo_Ativ", "datalnicial_Ativ", "hora", "local_Ativ", "desc_Ativ", "categoria", "participantes"};
-        String selection = "id = ?";
-        String[] selectionArgs = {String.valueOf(id)};
+        String selection = "id = ? AND id_usuario = ?";
+        String[] selectionArgs = {String.valueOf(id), String.valueOf(sessionManager.getUserId())};
         Cursor cursor = db.query("Atividades", columns, selection, selectionArgs, null, null, null);
 
         Atividade atividade = null;
@@ -150,8 +152,8 @@ public class AtividadeDAO {
             Cursor cursor = db.query(
                 "Atividades",
                 new String[]{"participantes"},
-                null,
-                null,
+                "id_usuario = ?",
+                new String[]{String.valueOf(sessionManager.getUserId())},
                 "participantes",
                 null,
                 null
@@ -182,7 +184,7 @@ public class AtividadeDAO {
         return participantes;
     }
 
-    public List<Atividade> listarAtividadesFiltradas(String titulo, String dataInicial, String dataFinal, String participante, String categoria) {
+    public List<Atividade> listarAtividadesFiltradas(String titulo, String dataInicial, String dataFinal, String participante, String categoria, String local) {
         List<Atividade> atividades = new ArrayList<>();
         db = dbHelper.getReadableDatabase();
 
@@ -191,7 +193,7 @@ public class AtividadeDAO {
 
         // Se nenhum filtro foi preenchido, retorna lista vazia
         if (titulo.isEmpty() && dataInicial.isEmpty() && dataFinal.isEmpty() && 
-            participante.isEmpty() && categoria.isEmpty()) {
+            participante.isEmpty() && categoria.isEmpty() && local.isEmpty()) {
             return atividades;
         }
 
@@ -230,6 +232,14 @@ public class AtividadeDAO {
             }
             selection.append("categoria = ?");
             selectionArgs.add(categoria);
+        }
+
+        if (!local.isEmpty()) {
+            if (selection.length() > 0) {
+                selection.append(" AND ");
+            }
+            selection.append("local_Ativ LIKE ?");
+            selectionArgs.add("%" + local + "%");
         }
 
         // Adiciona filtro para mostrar apenas atividades do usuário atual

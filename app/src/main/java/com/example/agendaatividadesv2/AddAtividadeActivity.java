@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.agendaatividadesv2.dao.AtividadeDAO;
+import com.example.agendaatividadesv2.dao.CategoriaDAO;
+import com.example.agendaatividadesv2.dao.LocalDAO;
 import com.example.agendaatividadesv2.modelos.Atividade;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.button.MaterialButton;
@@ -22,10 +24,11 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Arrays;
+import java.util.ArrayList;
 
 public class AddAtividadeActivity extends AppCompatActivity {
-    private TextInputEditText etTitulo, etDescricao, etData, etHora, etLocal;
-    private AutoCompleteTextView etParticipantes, spinnerCategoria;
+    private TextInputEditText etTitulo, etDescricao, etData, etHora;
+    private AutoCompleteTextView etParticipantes, spinnerCategoria, etLocal;
     private MaterialButton btnSalvar, btnCancelar;
     private AtividadeDAO atividadeDAO;
     private Calendar calendar;
@@ -128,6 +131,12 @@ public class AddAtividadeActivity extends AppCompatActivity {
 
         // Configurar spinner de categorias
         configurarSpinnerCategoria();
+
+        // Configurar spinner de locais
+        configurarSpinnerLocal();
+
+        // Carregar dados dos spinners
+        carregarParticipantes();
 
         // Configuração dos botões
         btnSalvar.setOnClickListener(v -> salvarAtividade());
@@ -235,21 +244,57 @@ public class AddAtividadeActivity extends AppCompatActivity {
     }
 
     private void configurarSpinnerCategoria() {
-        // Lista de categorias comuns
-        List<String> categorias = Arrays.asList(
-            "Reunião",
-            "Evento",
-            "Compromisso",
-            "Tarefa",
-            "Lembrete",
-            "Outro"
-        );
-
+        CategoriaDAO categoriaDAO = new CategoriaDAO(this);
+        List<String> categorias = categoriaDAO.listarNomesCategorias();
+        
         adapterCategorias = new ArrayAdapter<>(
             this,
             android.R.layout.simple_dropdown_item_1line,
             categorias
         );
         spinnerCategoria.setAdapter(adapterCategorias);
+    }
+
+    private void configurarSpinnerLocal() {
+        try {
+            android.util.Log.d("AddAtividade", "Iniciando carregamento de locais");
+            LocalDAO localDAO = new LocalDAO(this);
+            List<String> locais = localDAO.listarNomesLocais();
+            
+            android.util.Log.d("AddAtividade", "Criando adapter com " + locais.size() + " locais");
+            ArrayAdapter<String> adapterLocais = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                locais
+            );
+            etLocal.setAdapter(adapterLocais);
+            android.util.Log.d("AddAtividade", "Locais carregados com sucesso");
+        } catch (Exception e) {
+            android.util.Log.e("AddAtividade", "Erro ao carregar locais: " + e.getMessage(), e);
+            Toast.makeText(this, "Erro ao carregar locais", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void carregarParticipantes() {
+        try {
+            android.util.Log.d("AddAtividade", "Iniciando carregamento de participantes");
+            List<String> participantes = atividadeDAO.listarParticipantesUnicos();
+            if (participantes == null) {
+                android.util.Log.w("AddAtividade", "Lista de participantes é null");
+                participantes = new ArrayList<>();
+            }
+            
+            android.util.Log.d("AddAtividade", "Criando adapter com " + participantes.size() + " participantes");
+            ArrayAdapter<String> adapterParticipantes = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                participantes
+            );
+            etParticipantes.setAdapter(adapterParticipantes);
+            android.util.Log.d("AddAtividade", "Participantes carregados com sucesso");
+        } catch (Exception e) {
+            android.util.Log.e("AddAtividade", "Erro ao carregar participantes: " + e.getMessage(), e);
+            Toast.makeText(this, "Erro ao carregar participantes", Toast.LENGTH_SHORT).show();
+        }
     }
 }

@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.agendaatividadesv2.dao.AtividadeDAO;
+import com.example.agendaatividadesv2.dao.CategoriaDAO;
+import com.example.agendaatividadesv2.dao.LocalDAO;
 import com.example.agendaatividadesv2.modelos.Atividade;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -23,8 +25,8 @@ import java.util.Locale;
 import java.util.Arrays;
 
 public class EditarAtividadeActivity extends AppCompatActivity {
-    private TextInputEditText etTitulo, etDescricao, etData, etHora, etLocal, etParticipantes;
-    private AutoCompleteTextView spinnerCategoria;
+    private TextInputEditText etTitulo, etDescricao, etData, etHora;
+    private AutoCompleteTextView etParticipantes, spinnerCategoria, etLocal;
     private MaterialButton btnSalvar, btnCancelar;
     private AtividadeDAO atividadeDAO;
     private Calendar calendar;
@@ -243,22 +245,27 @@ public class EditarAtividadeActivity extends AppCompatActivity {
     }
 
     private void configurarSpinnerCategoria() {
-        // Lista de categorias comuns
-        List<String> categorias = Arrays.asList(
-            "Reunião",
-            "Evento",
-            "Compromisso",
-            "Tarefa",
-            "Lembrete",
-            "Outro"
-        );
-
+        CategoriaDAO categoriaDAO = new CategoriaDAO(this);
+        List<String> categorias = categoriaDAO.listarNomesCategorias();
+        
         adapterCategorias = new ArrayAdapter<>(
             this,
             android.R.layout.simple_dropdown_item_1line,
             categorias
         );
         spinnerCategoria.setAdapter(adapterCategorias);
+    }
+
+    private void configurarSpinnerLocal() {
+        LocalDAO localDAO = new LocalDAO(this);
+        List<String> locais = localDAO.listarNomesLocais();
+        
+        ArrayAdapter<String> adapterLocais = new ArrayAdapter<>(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            locais
+        );
+        etLocal.setAdapter(adapterLocais);
     }
 
     @Override
